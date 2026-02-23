@@ -7,7 +7,7 @@ import { useAuthStore, useRootPathStore } from '../stores'
 import { apiRemoteService, apiLocalService } from '../services/APIRequest'
 import FileTree from '../components/FileTree'
 import type { FileNode } from "../types"
-import { FaInfoCircle, FaCalendarAlt, FaLink, FaDatabase, FaClock } from 'react-icons/fa'
+import { FaInfoCircle, FaCalendarAlt, FaLink, FaDatabase, FaClock, FaLock } from 'react-icons/fa'
 
 function ProjectDetail() {
     const { id, name } = useParams<{ id: string; name: string }>()
@@ -99,11 +99,53 @@ function ProjectDetail() {
             alert(errorMessage)
         }
     }
+
+    const handleCheckout = async () => {
+        if (!selectedNode || !id || !rootPath) {
+            alert('Missing required information for checkout');
+            return;
+        }
+
+        // Path transformation: exclude the first segment
+        const segments = selectedNode.path.split('/');
+        const relativePath = segments.slice(1).join('/');
+        const localPath = `${rootPath}/${relativePath}`;
+
+        try {
+            const response = await apiLocalService.post('/api/checkout', null, {
+                params: {
+                    workspaceId: id,
+                    localPath: localPath
+                }
+            });
+
+            const message = typeof response.data === 'string'
+                ? response.data
+                : (response.data.message || 'Checkout process started successfully.');
+
+            alert(message);
+        } catch (err: any) {
+            console.error('Error during checkout:', err);
+            const errorData = err.response?.data;
+            let errorMessage = 'Failed to start checkout';
+
+            if (typeof errorData === 'string') {
+                errorMessage = errorData;
+            } else if (errorData && typeof errorData === 'object' && errorData.message) {
+                errorMessage = errorData.message;
+            } else if (err instanceof Error) {
+                errorMessage = err.message;
+            }
+
+            alert(errorMessage);
+        }
+    };
+
     console.log(rootPaths)
 
     return (
         <div>
-            <NavBar title="Project Details" />
+            <NavBar title="Workspace Details" />
 
             <div className="py-4">
                 <div className="container">
@@ -113,7 +155,7 @@ function ProjectDetail() {
                                 className="btn btn-secondary mb-3"
                                 onClick={() => navigate('/projects')}
                             >
-                                ← Back to Projects
+                                ← Back to Workspaces
                             </button>
 
                             <div className="card shadow-sm border-0">
@@ -187,12 +229,6 @@ function ProjectDetail() {
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="property-group mb-3">
-                                                                        <div className="d-flex align-items-center text-muted small mb-1">
-                                                                            <FaDatabase className="me-2" /> Node ID
-                                                                        </div>
-                                                                        <div className="fw-bold ps-4">{selectedNode.nodeId}</div>
-                                                                    </div>
 
                                                                     {selectedNode.nodeType === 'file' && (
                                                                         <div className="property-group mb-3">
@@ -203,9 +239,9 @@ function ProjectDetail() {
                                                                                 {selectedNode.lastModifiedAt ? new Date(selectedNode.lastModifiedAt).toLocaleString() : 'N/A'}
                                                                             </div>
 
-                                                                         
+
                                                                         </div>
-                                                                        
+
                                                                     )}
 
                                                                     {selectedNode.nodeType === 'file' && (
@@ -214,10 +250,10 @@ function ProjectDetail() {
                                                                                 <div className="d-flex align-items-center text-muted small mb-1">
                                                                                     <FaClock className="me-2" /> Version
                                                                                 </div>
-                                                                                <div className="fw-bold ps-4">{"L:" +selectedNode.localVersionNum}</div>
+                                                                                <div className="fw-bold ps-4">{"L:" + selectedNode.localVersionNum}</div>
                                                                                 <div className="fw-bold ps-4">
-                                                                                {selectedNode.currentVersion ?"C:"+ selectedNode.currentVersion : 'N/A'}
-                                                                            </div>
+                                                                                    {selectedNode.currentVersion ? "C:" + selectedNode.currentVersion : 'N/A'}
+                                                                                </div>
                                                                             </div>
 
                                                                             <div className="property-group mb-3">
@@ -240,6 +276,32 @@ function ProjectDetail() {
                                                                             <FaInfoCircle className="me-2" /> Path
                                                                         </div>
                                                                         <code className="ps-4 d-block small text-dark">{selectedNode.path}</code>
+                                                                    </div>
+
+                                                                    {selectedNode.isLocked && (
+                                                                        <div className="property-group mb-3">
+                                                                            <div className="d-flex align-items-center text-danger small mb-1">
+                                                                                <FaLock className="me-2" /> Locked
+                                                                            </div>
+                                                                            <div className="fw-bold ps-4 text-danger">
+                                                                                By: {selectedNode.lockedBy || 'Unknown'}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div className="mt-4 pt-2 border-top">
+                                                                        <button
+                                                                            className="btn btn-primary w-100 d-flex align-items-center justify-content-center"
+                                                                            onClick={handleCheckout}
+                                                                            disabled={!rootPath}
+                                                                        >
+                                                                            <FaClock className="me-2" /> Check Out
+                                                                        </button>
+                                                                        {!rootPath && (
+                                                                            <p className="text-danger small mt-2 mb-0">
+                                                                                Local root path not found. Please clone the project first.
+                                                                            </p>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             ) : (
