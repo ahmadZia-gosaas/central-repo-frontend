@@ -153,7 +153,7 @@ function ProjectDetail() {
                                 userS3VersionId: null,
                                 isLocked: false,
                                 lockedBy: null,
-                                localLastModified: localChild.lastModifiedAt || localChild.lastModified,
+                                localLastModified: localChild.lastModifiedAt ,
                                 children: []
                             };
 
