@@ -7,19 +7,28 @@ import { useAuthStore, useRootPathStore } from '../stores'
 import { apiRemoteService, apiLocalService } from '../services/APIRequest'
 import FileTree from '../components/FileTree'
 import type { FileNode } from "../types"
-import { FaInfoCircle, FaCalendarAlt, FaLink, FaDatabase, FaClock, FaLock, FaSync } from 'react-icons/fa'
+import FileHistoryTable from '../components/FileHistoryTable'
+import ProjectInfo from '../components/ProjectInfo'
+import FileProperties from '../components/FileProperties'
+import { mergeTrees } from '../utils/treeUtils'
 
 function ProjectDetail() {
     const { id, name } = useParams<{ id: string; name: string }>()
     const navigate = useNavigate()
     const { user, mac } = useAuthStore()
-    const { fetchRootPath, getRootPath, rootPaths } = useRootPathStore()
+    const { fetchRootPath, getRootPath } = useRootPathStore()
     const rootPath = (id && mac) ? getRootPath(id, mac) : undefined
     const [userState, setUserState] = useState<FileNode | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<number | null>(null)
     const [isCloneModalOpen, setIsCloneModalOpen] = useState(false)
     const [selectedNode, setSelectedNode] = useState<FileNode | null>(null)
+
+    // History states
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
+    const [historyData, setHistoryData] = useState<any[]>([])
+    const [loadingHistory, setLoadingHistory] = useState(false)
+    const [historyNodeName, setHistoryNodeName] = useState('')
 
     useEffect(() => {
         const fetchUserState = async () => {
@@ -114,63 +123,6 @@ function ProjectDetail() {
 
             const localTree = response.data;
 
-            const mergeTrees = (remoteNode: FileNode, localNode: any): FileNode => {
-                const updatedNode = { ...remoteNode };
-
-                // Update localLastModified if it's a file
-                if (remoteNode.nodeType === 'file') {
-                    updatedNode.localLastModified = localNode.lastModifiedAt || localNode.lastModified;
-                }
-
-                // Merge children
-                if (localNode.children && Array.isArray(localNode.children)) {
-                    const remoteChildrenMap = new Map(remoteNode.children.map(child => [child.name, child]));
-                    const mergedChildren = [...remoteNode.children];
-
-                    localNode.children.forEach((localChild: any) => {
-                        const remoteChild = remoteChildrenMap.get(localChild.name);
-                        if (remoteChild) {
-                            // Recursive merge for existing nodes
-                            const mergedChild = mergeTrees(remoteChild, localChild);
-                            const index = mergedChildren.findIndex(c => c.name === localChild.name);
-                            mergedChildren[index] = mergedChild;
-                        } else {
-                            // New node found locally but not in remote state
-                            const newNode: FileNode = {
-                                nodeId: -1,
-                                name: localChild.name,
-                                nodeType: (localChild.children && localChild.children.length > 0) || localChild.type === 'folder' ? 'folder' : 'file',
-                                path: localChild.path,
-                                workspaceId: remoteNode.workspaceId,
-                                localVersionNum: 0,
-                                currentVersion: 0,
-                                latest: false,
-                                lastModifiedAt: null,
-                                lastSyncedAt: null,
-                                s3Url: null,
-                                s3VersionId: null,
-                                userS3Url: null,
-                                userS3VersionId: null,
-                                isLocked: false,
-                                lockedBy: null,
-                                localLastModified: localChild.lastModifiedAt,
-                                children: []
-                            };
-
-                            if (localChild.children) {
-                                const processedNewNode = mergeTrees(newNode, localChild);
-                                mergedChildren.push(processedNewNode);
-                            } else {
-                                mergedChildren.push(newNode);
-                            }
-                        }
-                    });
-                    updatedNode.children = mergedChildren;
-                }
-
-                return updatedNode;
-            };
-
             const updatedState = mergeTrees(userState, localTree);
             setUserState(updatedState);
             alert('Local state updated successfully.');
@@ -221,27 +173,45 @@ function ProjectDetail() {
 
             alert(errorMessage);
         }
+        
     };
 
-    const handleCheckIn = async (path: string) => {
+    const handleCheckIn = async (node: FileNode) => {
         if (!id || !rootPath || !name) {
             alert('Missing required information for check-in');
             return;
         }
 
+        if (node.isLocked == true && node.lockedBy != user?.username) {
+            alert("File is locked by another user cannot perform this action")
+            return;
+        }
+
         // Path transformation: exclude the first segment
-        const segments = path.split('/');
+        const segments = node.path.split('/');
         const relativePath = segments.slice(1).join('/');
         const localPath = `${rootPath}/${relativePath}`;
 
         try {
-            const response = await apiLocalService.post('/api/check-in/update', {
-                workspaceName: name,
-                localPath: localPath
-            })
+            let response;
+            if (node.nodeType === 'folder') {
+                // Bulk check-in for directories
+                response = await apiLocalService.post('/api/check-in/update/bulk', null, {
+                    params: {
+                        workspaceName: name,
+                        localPath: localPath
+                    }
+                });
+            } else {
+                // Regular check-in for files
+                response = await apiLocalService.post('/api/check-in/update', {
+                    workspaceName: name,
+                    localPath: localPath
+                });
+            }
 
-            if (response.status == 202) {
-                alert("Check-in process started successfully.");
+            if (response.status === 200 || response.status === 202) {
+                alert(response.data || "Check-in process started successfully.");
             }
         } catch (err: any) {
             console.error('Error during check-in:', err);
@@ -260,14 +230,14 @@ function ProjectDetail() {
         }
     };
 
-    const handleCheckInAsNew = async (path: string) => {
+    const handleCheckInAsNew = async (node: FileNode) => {
         if (!id || !rootPath || !name) {
             alert('Missing required information for check-in');
             return;
         }
 
         // Path transformation: exclude the first segment
-        const segments = path.split('/');
+        const segments = node.path.split('/');
         const relativePath = segments.slice(1).join('/');
         const localPath = `${rootPath}/${relativePath}`;
 
@@ -278,8 +248,8 @@ function ProjectDetail() {
             })
             console.log(response)
 
-            if (response.status == 200) {
-                alert(response.data || "Check-in process for new file started successfully.");
+            if (response.status === 200 || response.status === 202) {
+                alert(response.data || "Check-in process for new item started successfully.");
             }
         } catch (err: any) {
             console.error('Error during check-in as new:', err);
@@ -298,14 +268,14 @@ function ProjectDetail() {
         }
     };
 
-    const handleSync = async (path: string) => {
+    const handleSync = async (node: FileNode) => {
         if (!id || !rootPath) {
             alert('Missing required information for sync');
             return;
         }
 
         // Path transformation: exclude the first segment
-        const segments = path.split('/');
+        const segments = node.path.split('/');
         const relativePath = segments.slice(1).join('/');
         const localPath = `${rootPath}/${relativePath}`;
 
@@ -335,6 +305,29 @@ function ProjectDetail() {
         }
     };
 
+    const handleHistory = async (node: FileNode) => {
+        if (!id) return;
+
+        try {
+            setHistoryNodeName(node.name);
+            setIsHistoryModalOpen(true);
+            setLoadingHistory(true);
+            setHistoryData([]);
+
+            const response = await apiRemoteService.post('/api/file-history', {
+                nodeId: node.nodeId,
+                workspaceId: parseInt(id, 10)
+            });
+
+            setHistoryData(Array.isArray(response.data) ? response.data : []);
+        } catch (err: any) {
+            console.error('Error fetching file history:', err);
+            alert('Failed to fetch file history.');
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
+
     //   console.log(rootPaths)
 
     return (
@@ -344,7 +337,7 @@ function ProjectDetail() {
             <div className="py-4">
                 <div className="container">
                     <div className="row justify-content-center">
-                        <div className="col-md-10">
+                        <div className="col-md-12">
                             <button
                                 className="btn btn-secondary mb-3"
                                 onClick={() => navigate('/projects')}
@@ -358,32 +351,12 @@ function ProjectDetail() {
                                         <h1 className="card-title h2 fw-bold text-dark">{name}</h1>
                                     </div>
 
-                                    <div className="row mt-4">
-                                        <div className="col-md-6 mb-3">
-                                            <p className="text-muted small">Project ID</p>
-                                            <h5 className="fw-bold">{id}</h5>
-                                        </div>
-                                        <div className="col-md-6 mb-3">
-                                            <p className="text-muted small">Project Name</p>
-                                            <h5 className="fw-bold">{name}</h5>
-                                        </div>
-                                        {rootPath && (
-                                            <div className="col-md-12 mb-3">
-                                                <p className="text-muted small">Local Root Path</p>
-                                                <div className="d-flex align-items-center">
-                                                    <h5 className="fw-bold text-primary mb-0 me-3">{rootPath}</h5>
-                                                    <button
-                                                        className="btn btn-outline-primary btn-sm rounded-circle shadow-sm"
-                                                        onClick={handleRefresh}
-                                                        title="show updated state of the local directory"
-                                                        style={{ width: '32px', height: '32px', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                    >
-                                                        <FaSync size={14} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                                    <ProjectInfo
+                                        id={id}
+                                        name={name}
+                                        rootPath={rootPath}
+                                        onRefresh={handleRefresh}
+                                    />
 
                                     <hr className="my-4" />
 
@@ -417,6 +390,7 @@ function ProjectDetail() {
                                                         onCheckIn={handleCheckIn}
                                                         onCheckInAsNew={handleCheckInAsNew}
                                                         onSync={handleSync}
+                                                        onHistory={handleHistory}
                                                     />
                                                 </div>
                                                 <div className="col-md-7">
@@ -425,108 +399,11 @@ function ProjectDetail() {
                                                     </div>
                                                     <div className="card border-0 bg-light h-100">
                                                         <div className="card-body">
-                                                            {selectedNode ? (
-                                                                <div>
-                                                                    <div className="d-flex align-items-center mb-4">
-                                                                        <div className="bg-white p-2 rounded shadow-sm me-3 text-primary">
-                                                                            <FaInfoCircle size={24} />
-                                                                        </div>
-                                                                        <div>
-                                                                            <h5 className="mb-0 fw-bold">{selectedNode.name}</h5>
-                                                                            <span className={`badge ${selectedNode.nodeType === 'folder' ? 'bg-warning text-dark' : 'bg-info'}`}>
-                                                                                {selectedNode.nodeType.toUpperCase()}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-
-
-                                                                    {selectedNode.nodeType === 'file' && (
-                                                                        <div className="property-group mb-3">
-                                                                            <div className="d-flex align-items-center text-muted small mb-1">
-                                                                                <FaCalendarAlt className="me-2" /> Last Modified (Remote)
-                                                                            </div>
-                                                                            <div className="fw-bold ps-4">
-                                                                                {selectedNode.lastModifiedAt ? new Date(selectedNode.lastModifiedAt).toLocaleString() : 'N/A'}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-
-                                                                    {selectedNode.nodeType === 'file' && selectedNode.localLastModified && (
-                                                                        <div className="property-group mb-3">
-                                                                            <div className="d-flex align-items-center text-success small mb-1">
-                                                                                <FaClock className="me-2" /> Last Modified (Local)
-                                                                            </div>
-                                                                            <div className="fw-bold ps-4">
-                                                                                {new Date(selectedNode.localLastModified).toLocaleString()}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-
-                                                                    {selectedNode.nodeType === 'file' && (
-                                                                        <>
-                                                                            <div className="property-group mb-3">
-                                                                                <div className="d-flex align-items-center text-muted small mb-1">
-                                                                                    <FaClock className="me-2" /> Version
-                                                                                </div>
-                                                                                <div className="fw-bold ps-4">{"L:" + selectedNode.localVersionNum}</div>
-                                                                                <div className="fw-bold ps-4">
-                                                                                    {selectedNode.currentVersion ? "C:" + selectedNode.currentVersion : 'N/A'}
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <div className="property-group mb-3">
-                                                                                <div className="d-flex align-items-center text-muted small mb-1">
-                                                                                    <FaLink className="me-2" /> S3 URL
-                                                                                </div>
-                                                                                <div className="ps-4 overflow-hidden text-truncate" style={{ maxWidth: '100%' }}>
-                                                                                    {selectedNode.s3Url ? (
-                                                                                        <a href={selectedNode.s3Url} target="_blank" rel="noopener noreferrer" className="text-break small">
-                                                                                            {selectedNode.s3Url}
-                                                                                        </a>
-                                                                                    ) : 'None'}
-                                                                                </div>
-                                                                            </div>
-                                                                        </>
-                                                                    )}
-
-                                                                    <div className="property-group mb-3">
-                                                                        <div className="d-flex align-items-center text-muted small mb-1">
-                                                                            <FaInfoCircle className="me-2" /> Path
-                                                                        </div>
-                                                                        <code className="ps-4 d-block small text-dark">{selectedNode.path}</code>
-                                                                    </div>
-
-                                                                    {selectedNode.isLocked && (
-                                                                        <div className="property-group mb-3">
-                                                                            <div className="d-flex align-items-center text-danger small mb-1">
-                                                                                <FaLock className="me-2" /> Locked
-                                                                            </div>
-                                                                            <div className="fw-bold ps-4 text-danger">
-                                                                                By: {selectedNode.lockedBy || 'Unknown'}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-
-                                                                    <div className="mt-4 pt-2 border-top">
-                                                                        <button
-                                                                            className="btn btn-primary w-100 d-flex align-items-center justify-content-center"
-                                                                            onClick={handleCheckout}
-                                                                            disabled={!rootPath}
-                                                                        >
-                                                                            <FaClock className="me-2" /> Check Out
-                                                                        </button>
-                                                                        {!rootPath && (
-                                                                            <p className="text-danger small mt-2 mb-0">
-                                                                                Local root path not found. Please clone the project first.
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="text-center py-5">
-                                                                    <p className="text-muted">Select a node to view its properties</p>
-                                                                </div>
-                                                            )}
+                                                            <FileProperties
+                                                                selectedNode={selectedNode}
+                                                                rootPath={rootPath}
+                                                                onCheckout={handleCheckout}
+                                                            />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -555,6 +432,16 @@ function ProjectDetail() {
                     onCancel={() => setIsCloneModalOpen(false)}
                     onSubmit={onCloneSubmit}
                 />
+            </Modal>
+
+            <Modal
+                isOpen={isHistoryModalOpen}
+                title={`Version History: ${historyNodeName}`}
+                onClose={() => setIsHistoryModalOpen(false)}
+                size="lg"
+
+            >
+                <FileHistoryTable data={historyData} loading={loadingHistory} filename={historyNodeName} />
             </Modal>
         </div>
     )

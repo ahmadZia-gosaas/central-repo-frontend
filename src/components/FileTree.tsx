@@ -1,17 +1,18 @@
 import { Tree } from 'react-arborist';
-import { FaFolder, FaFile, FaChevronRight, FaChevronDown, FaUpload, FaPlus, FaSync } from 'react-icons/fa';
+import { FaFolder, FaFile, FaChevronRight, FaChevronDown, FaUpload, FaPlus, FaSync, FaHistory } from 'react-icons/fa';
 import { useMemo } from 'react';
 import type { FileNode } from '../types';
 
 interface FileTreeProps {
     data: FileNode;
     onSelect: (node: FileNode) => void;
-    onCheckIn?: (path: string) => void;
-    onCheckInAsNew?: (path: string) => void;
-    onSync?: (path: string) => void;
+    onCheckIn?: (node: FileNode) => void;
+    onCheckInAsNew?: (node: FileNode) => void;
+    onSync?: (node: FileNode) => void;
+    onHistory?: (node: FileNode) => void;
 }
 
-const FileTree = ({ data, onSelect, onCheckIn, onCheckInAsNew, onSync }: FileTreeProps) => {
+const FileTree = ({ data, onSelect, onCheckIn, onCheckInAsNew, onSync, onHistory }: FileTreeProps) => {
     // react-arborist expects an array of roots
     const treeData = useMemo(() => {
         // Map the incoming structure to what react-arborist expects (id, name, children)
@@ -28,7 +29,7 @@ const FileTree = ({ data, onSelect, onCheckIn, onCheckInAsNew, onSync }: FileTre
         <div className="file-tree-container" style={{ height: '400px', width: '100%', border: '1px solid #dee2e6', borderRadius: '4px', overflow: 'hidden' }}>
             <Tree
                 initialData={treeData}
-                openByDefault={false}
+                openByDefault={true}
                 width={"100%"}
                 height={400}
                 indent={20}
@@ -71,41 +72,54 @@ const FileTree = ({ data, onSelect, onCheckIn, onCheckInAsNew, onSync }: FileTre
                                 {node.data.name}
                             </span>
 
-                            {isFile && (
+                            {(isFile || originalData.nodeType === 'folder') && (
                                 <div className="d-flex align-items-center ms-2 me-2">
+                                    {isFile && (
+                                        <button
+                                            className={`btn btn-link p-0 me-2 ${node.isSelected ? 'text-white' : 'text-secondary'}`}
+                                            title="view version history"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onHistory?.(originalData);
+                                            }}
+                                            style={{ border: 'none', background: 'none' }}
+                                        >
+                                            <FaHistory size={12} />
+                                        </button>
+                                    )}
                                     <button
-                                        className={`btn btn-link p-0 me-2 ${canSync ? (node.isSelected ? 'text-white' : 'text-info') : 'text-muted'}`}
-                                        disabled={!canSync}
+                                        className={`btn btn-link p-0 me-2 ${(isFile ? canSync : true) ? (node.isSelected ? 'text-white' : 'text-info') : 'text-muted'}`}
+                                        disabled={isFile ? !canSync : false}
                                         title="get latest version from remote"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            onSync?.(originalData.path);
+                                            onSync?.(originalData);
                                         }}
-                                        style={{ opacity: canSync ? 1 : 0.4, border: 'none', background: 'none' }}
+                                        style={{ opacity: (isFile ? canSync : true) ? 1 : 0.4, border: 'none', background: 'none' }}
                                     >
                                         <FaSync size={12} />
                                     </button>
                                     <button
-                                        className={`btn btn-link p-0 me-2 ${canCheckIn ? (node.isSelected ? 'text-white' : 'text-primary') : 'text-muted'}`}
-                                        disabled={!canCheckIn}
+                                        className={`btn btn-link p-0 me-2 ${(isFile ? canCheckIn : true) ? (node.isSelected ? 'text-white' : 'text-primary') : 'text-muted'}`}
+                                        disabled={isFile ? !canCheckIn : false}
                                         title="check in"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            onCheckIn?.(originalData.path);
+                                            onCheckIn?.(originalData);
                                         }}
-                                        style={{ opacity: canCheckIn ? 1 : 0.4, border: 'none', background: 'none' }}
+                                        style={{ opacity: (isFile ? canCheckIn : true) ? 1 : 0.4, border: 'none', background: 'none' }}
                                     >
                                         <FaUpload size={14} />
                                     </button>
                                     <button
-                                        className={`btn btn-link p-0 ${canCheckInAsNew ? (node.isSelected ? 'text-white' : 'text-success') : 'text-muted'}`}
-                                        disabled={!canCheckInAsNew}
+                                        className={`btn btn-link p-0 ${(isFile ? canCheckInAsNew : true) ? (node.isSelected ? 'text-white' : 'text-success') : 'text-muted'}`}
+                                        disabled={isFile ? !canCheckInAsNew : false}
                                         title="check in as new"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            onCheckInAsNew?.(originalData.path);
+                                            onCheckInAsNew?.(originalData);
                                         }}
-                                        style={{ opacity: canCheckInAsNew ? 1 : 0.4, border: 'none', background: 'none' }}
+                                        style={{ opacity: (isFile ? canCheckInAsNew : true) ? 1 : 0.4, border: 'none', background: 'none' }}
                                     >
                                         <FaPlus size={14} />
                                     </button>
