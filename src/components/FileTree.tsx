@@ -1,5 +1,5 @@
 import { Tree } from 'react-arborist';
-import { FaFolder, FaFile, FaChevronRight, FaChevronDown, FaUpload, FaPlus } from 'react-icons/fa';
+import { FaFolder, FaFile, FaChevronRight, FaChevronDown, FaUpload, FaPlus, FaSync } from 'react-icons/fa';
 import { useMemo } from 'react';
 import type { FileNode } from '../types';
 
@@ -8,9 +8,10 @@ interface FileTreeProps {
     onSelect: (node: FileNode) => void;
     onCheckIn?: (path: string) => void;
     onCheckInAsNew?: (path: string) => void;
+    onSync?: (path: string) => void;
 }
 
-const FileTree = ({ data, onSelect, onCheckIn, onCheckInAsNew }: FileTreeProps) => {
+const FileTree = ({ data, onSelect, onCheckIn, onCheckInAsNew, onSync }: FileTreeProps) => {
     // react-arborist expects an array of roots
     const treeData = useMemo(() => {
         // Map the incoming structure to what react-arborist expects (id, name, children)
@@ -50,6 +51,7 @@ const FileTree = ({ data, onSelect, onCheckIn, onCheckInAsNew }: FileTreeProps) 
 
                     const canCheckIn = isFile && localMod > remoteMod && originalData.nodeId !== -1;
                     const canCheckInAsNew = isFile && originalData.nodeId === -1;
+                    const canSync = isFile && originalData.localVersionNum < originalData.currentVersion;
 
                     return (
                         <div style={style} ref={dragHandle} className={`tree-node d-flex align-items-center ${node.isSelected ? 'bg-primary text-white' : ''}`} >
@@ -71,6 +73,18 @@ const FileTree = ({ data, onSelect, onCheckIn, onCheckInAsNew }: FileTreeProps) 
 
                             {isFile && (
                                 <div className="d-flex align-items-center ms-2 me-2">
+                                    <button
+                                        className={`btn btn-link p-0 me-2 ${canSync ? (node.isSelected ? 'text-white' : 'text-info') : 'text-muted'}`}
+                                        disabled={!canSync}
+                                        title="get latest version from remote"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onSync?.(originalData.path);
+                                        }}
+                                        style={{ opacity: canSync ? 1 : 0.4, border: 'none', background: 'none' }}
+                                    >
+                                        <FaSync size={12} />
+                                    </button>
                                     <button
                                         className={`btn btn-link p-0 me-2 ${canCheckIn ? (node.isSelected ? 'text-white' : 'text-primary') : 'text-muted'}`}
                                         disabled={!canCheckIn}

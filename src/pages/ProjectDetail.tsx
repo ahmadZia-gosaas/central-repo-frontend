@@ -153,7 +153,7 @@ function ProjectDetail() {
                                 userS3VersionId: null,
                                 isLocked: false,
                                 lockedBy: null,
-                                localLastModified: localChild.lastModifiedAt ,
+                                localLastModified: localChild.lastModifiedAt,
                                 children: []
                             };
 
@@ -298,7 +298,44 @@ function ProjectDetail() {
         }
     };
 
- //   console.log(rootPaths)
+    const handleSync = async (path: string) => {
+        if (!id || !rootPath) {
+            alert('Missing required information for sync');
+            return;
+        }
+
+        // Path transformation: exclude the first segment
+        const segments = path.split('/');
+        const relativePath = segments.slice(1).join('/');
+        const localPath = `${rootPath}/${relativePath}`;
+
+        try {
+            const response = await apiLocalService.post('/api/latest-version', {
+                projectId: parseInt(id, 10),
+                localPath: localPath
+            })
+
+            if (response.status === 200 || response.status === 202) {
+                alert(response.data || "Sync process started successfully.");
+            }
+        } catch (err: any) {
+            console.error('Error during sync:', err);
+            const errorData = err.response?.data;
+            let errorMessage = 'Failed to start sync';
+
+            if (typeof errorData === 'string') {
+                errorMessage = errorData;
+            } else if (errorData && typeof errorData === 'object' && errorData.message) {
+                errorMessage = errorData.message;
+            } else if (err instanceof Error) {
+                errorMessage = err.message;
+            }
+
+            alert(errorMessage);
+        }
+    };
+
+    //   console.log(rootPaths)
 
     return (
         <div>
@@ -379,6 +416,7 @@ function ProjectDetail() {
                                                         onSelect={setSelectedNode}
                                                         onCheckIn={handleCheckIn}
                                                         onCheckInAsNew={handleCheckInAsNew}
+                                                        onSync={handleSync}
                                                     />
                                                 </div>
                                                 <div className="col-md-7">
