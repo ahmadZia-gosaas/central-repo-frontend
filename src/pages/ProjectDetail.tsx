@@ -7,7 +7,7 @@ import { useAuthStore, useRootPathStore } from '../stores'
 import { apiRemoteService, apiLocalService } from '../services/APIRequest'
 import FileTree from '../components/FileTree'
 import type { FileNode } from "../types"
-import { FaInfoCircle, FaCalendarAlt, FaLink, FaDatabase, FaClock, FaLock } from 'react-icons/fa'
+import { FaInfoCircle, FaCalendarAlt, FaLink, FaDatabase, FaClock, FaLock, FaSync } from 'react-icons/fa'
 
 function ProjectDetail() {
     const { id, name } = useParams<{ id: string; name: string }>()
@@ -53,8 +53,11 @@ function ProjectDetail() {
         if (id && user?.sub && mac) {
             const userId = (user.sub as string);
             fetchRootPath(id, userId, mac);
+
         }
     }, [id, user?.sub, mac, fetchRootPath])
+
+
 
     const onCloneSubmit = async (data: CloneProjectData) => {
         if (!id) return
@@ -100,6 +103,85 @@ function ProjectDetail() {
         }
     }
 
+    const handleRefresh = async () => {
+        if (!rootPath || !userState) return;
+
+        try {
+            setLoading(true);
+            const response = await apiLocalService.get('/client/tree', {
+                params: { path: rootPath }
+            });
+
+            const localTree = response.data;
+
+            const mergeTrees = (remoteNode: FileNode, localNode: any): FileNode => {
+                const updatedNode = { ...remoteNode };
+
+                // Update localLastModified if it's a file
+                if (remoteNode.nodeType === 'file') {
+                    updatedNode.localLastModified = localNode.lastModifiedAt || localNode.lastModified;
+                }
+
+                // Merge children
+                if (localNode.children && Array.isArray(localNode.children)) {
+                    const remoteChildrenMap = new Map(remoteNode.children.map(child => [child.name, child]));
+                    const mergedChildren = [...remoteNode.children];
+
+                    localNode.children.forEach((localChild: any) => {
+                        const remoteChild = remoteChildrenMap.get(localChild.name);
+                        if (remoteChild) {
+                            // Recursive merge for existing nodes
+                            const mergedChild = mergeTrees(remoteChild, localChild);
+                            const index = mergedChildren.findIndex(c => c.name === localChild.name);
+                            mergedChildren[index] = mergedChild;
+                        } else {
+                            // New node found locally but not in remote state
+                            const newNode: FileNode = {
+                                nodeId: -1,
+                                name: localChild.name,
+                                nodeType: (localChild.children && localChild.children.length > 0) || localChild.type === 'folder' ? 'folder' : 'file',
+                                path: localChild.path,
+                                workspaceId: remoteNode.workspaceId,
+                                localVersionNum: 0,
+                                currentVersion: 0,
+                                latest: false,
+                                lastModifiedAt: null,
+                                lastSyncedAt: null,
+                                s3Url: null,
+                                s3VersionId: null,
+                                userS3Url: null,
+                                userS3VersionId: null,
+                                isLocked: false,
+                                lockedBy: null,
+                                localLastModified: localChild.lastModifiedAt || localChild.lastModified,
+                                children: []
+                            };
+
+                            if (localChild.children) {
+                                const processedNewNode = mergeTrees(newNode, localChild);
+                                mergedChildren.push(processedNewNode);
+                            } else {
+                                mergedChildren.push(newNode);
+                            }
+                        }
+                    });
+                    updatedNode.children = mergedChildren;
+                }
+
+                return updatedNode;
+            };
+
+            const updatedState = mergeTrees(userState, localTree);
+            setUserState(updatedState);
+            alert('Local state updated successfully.');
+        } catch (err: any) {
+            console.error('Error refreshing local state:', err);
+            alert('Failed to refresh local state. Make sure the local service is running.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleCheckout = async () => {
         if (!selectedNode || !id || !rootPath) {
             alert('Missing required information for checkout');
@@ -141,7 +223,82 @@ function ProjectDetail() {
         }
     };
 
-    console.log(rootPaths)
+    const handleCheckIn = async (path: string) => {
+        if (!id || !rootPath || !name) {
+            alert('Missing required information for check-in');
+            return;
+        }
+
+        // Path transformation: exclude the first segment
+        const segments = path.split('/');
+        const relativePath = segments.slice(1).join('/');
+        const localPath = `${rootPath}/${relativePath}`;
+
+        try {
+            const response = await apiLocalService.post('/api/check-in/update', {
+                workspaceName: name,
+                localPath: localPath
+            })
+
+            if (response.status == 202) {
+                alert("Check-in process started successfully.");
+            }
+        } catch (err: any) {
+            console.error('Error during check-in:', err);
+            const errorData = err.response?.data;
+            let errorMessage = 'Failed to start check-in';
+
+            if (typeof errorData === 'string') {
+                errorMessage = errorData;
+            } else if (errorData && typeof errorData === 'object' && errorData.message) {
+                errorMessage = errorData.message;
+            } else if (err instanceof Error) {
+                errorMessage = err.message;
+            }
+
+            alert(errorMessage);
+        }
+    };
+
+    const handleCheckInAsNew = async (path: string) => {
+        if (!id || !rootPath || !name) {
+            alert('Missing required information for check-in');
+            return;
+        }
+
+        // Path transformation: exclude the first segment
+        const segments = path.split('/');
+        const relativePath = segments.slice(1).join('/');
+        const localPath = `${rootPath}/${relativePath}`;
+
+        try {
+            const response = await apiLocalService.post('/api/check-in', {
+                workspaceName: name,
+                localPath: localPath
+            })
+            console.log(response)
+
+            if (response.status == 200) {
+                alert(response.data || "Check-in process for new file started successfully.");
+            }
+        } catch (err: any) {
+            console.error('Error during check-in as new:', err);
+            const errorData = err.response?.data;
+            let errorMessage = 'Failed to start check-in as new';
+
+            if (typeof errorData === 'string') {
+                errorMessage = errorData;
+            } else if (errorData && typeof errorData === 'object' && errorData.message) {
+                errorMessage = errorData.message;
+            } else if (err instanceof Error) {
+                errorMessage = err.message;
+            }
+
+            alert(errorMessage);
+        }
+    };
+
+ //   console.log(rootPaths)
 
     return (
         <div>
@@ -176,7 +333,17 @@ function ProjectDetail() {
                                         {rootPath && (
                                             <div className="col-md-12 mb-3">
                                                 <p className="text-muted small">Local Root Path</p>
-                                                <h5 className="fw-bold text-primary">{rootPath}</h5>
+                                                <div className="d-flex align-items-center">
+                                                    <h5 className="fw-bold text-primary mb-0 me-3">{rootPath}</h5>
+                                                    <button
+                                                        className="btn btn-outline-primary btn-sm rounded-circle shadow-sm"
+                                                        onClick={handleRefresh}
+                                                        title="show updated state of the local directory"
+                                                        style={{ width: '32px', height: '32px', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                    >
+                                                        <FaSync size={14} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -207,7 +374,12 @@ function ProjectDetail() {
                                                     <div className="mb-2">
                                                         <small className="text-muted fw-bold">Project Explorer</small>
                                                     </div>
-                                                    <FileTree data={userState} onSelect={setSelectedNode} />
+                                                    <FileTree
+                                                        data={userState}
+                                                        onSelect={setSelectedNode}
+                                                        onCheckIn={handleCheckIn}
+                                                        onCheckInAsNew={handleCheckInAsNew}
+                                                    />
                                                 </div>
                                                 <div className="col-md-7">
                                                     <div className="mb-2">
@@ -233,15 +405,23 @@ function ProjectDetail() {
                                                                     {selectedNode.nodeType === 'file' && (
                                                                         <div className="property-group mb-3">
                                                                             <div className="d-flex align-items-center text-muted small mb-1">
-                                                                                <FaCalendarAlt className="me-2" /> Last Modified
+                                                                                <FaCalendarAlt className="me-2" /> Last Modified (Remote)
                                                                             </div>
                                                                             <div className="fw-bold ps-4">
                                                                                 {selectedNode.lastModifiedAt ? new Date(selectedNode.lastModifiedAt).toLocaleString() : 'N/A'}
                                                                             </div>
-
-
                                                                         </div>
+                                                                    )}
 
+                                                                    {selectedNode.nodeType === 'file' && selectedNode.localLastModified && (
+                                                                        <div className="property-group mb-3">
+                                                                            <div className="d-flex align-items-center text-success small mb-1">
+                                                                                <FaClock className="me-2" /> Last Modified (Local)
+                                                                            </div>
+                                                                            <div className="fw-bold ps-4">
+                                                                                {new Date(selectedNode.localLastModified).toLocaleString()}
+                                                                            </div>
+                                                                        </div>
                                                                     )}
 
                                                                     {selectedNode.nodeType === 'file' && (

@@ -1,16 +1,16 @@
 import { Tree } from 'react-arborist';
-import { FaFolder, FaFile, FaChevronRight, FaChevronDown } from 'react-icons/fa';
+import { FaFolder, FaFile, FaChevronRight, FaChevronDown, FaUpload, FaPlus } from 'react-icons/fa';
 import { useMemo } from 'react';
 import type { FileNode } from '../types';
-
-
 
 interface FileTreeProps {
     data: FileNode;
     onSelect: (node: FileNode) => void;
+    onCheckIn?: (path: string) => void;
+    onCheckInAsNew?: (path: string) => void;
 }
 
-const FileTree = ({ data, onSelect }: FileTreeProps) => {
+const FileTree = ({ data, onSelect, onCheckIn, onCheckInAsNew }: FileTreeProps) => {
     // react-arborist expects an array of roots
     const treeData = useMemo(() => {
         // Map the incoming structure to what react-arborist expects (id, name, children)
@@ -41,21 +41,65 @@ const FileTree = ({ data, onSelect }: FileTreeProps) => {
                     }
                 }}
             >
-                {({ node, style, dragHandle }) => (
-                    <div style={style} ref={dragHandle} className={`tree-node ${node.isSelected ? 'bg-primary text-white' : ''}`} >
-                        <span className="me-2" style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); node.toggle(); }}>
-                            {node.data.originalData.nodeType === 'folder' ? (
-                                node.isOpen ? <FaChevronDown size={12} /> : <FaChevronRight size={12} />
-                            ) : <span style={{ width: 12, display: 'inline-block' }}></span>}
-                        </span>
-                        <span className="me-2 text-warning" style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); node.toggle(); }}>
-                            {node.data.originalData.nodeType === 'folder' ? <FaFolder /> : <FaFile className="text-secondary" />}
-                        </span>
-                        <span style={{ cursor: 'pointer' }} onClick={() => onSelect(node.data.originalData)}>
-                            {node.data.name}
-                        </span>
-                    </div>
-                )}
+                {({ node, style, dragHandle }) => {
+                    const originalData = node.data.originalData as FileNode;
+                    const isFile = originalData.nodeType === 'file';
+
+                    const localMod = originalData.localLastModified ? new Date(originalData.localLastModified).getTime() : 0;
+                    const remoteMod = originalData.lastModifiedAt ? new Date(originalData.lastModifiedAt).getTime() : 0;
+
+                    const canCheckIn = isFile && localMod > remoteMod && originalData.nodeId !== -1;
+                    const canCheckInAsNew = isFile && originalData.nodeId === -1;
+
+                    return (
+                        <div style={style} ref={dragHandle} className={`tree-node d-flex align-items-center ${node.isSelected ? 'bg-primary text-white' : ''}`} >
+                            <span className="me-2" style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); node.toggle(); }}>
+                                {originalData.nodeType === 'folder' ? (
+                                    node.isOpen ? <FaChevronDown size={12} /> : <FaChevronRight size={12} />
+                                ) : <span style={{ width: 12, display: 'inline-block' }}></span>}
+                            </span>
+                            <span className="me-2 text-warning" style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); node.toggle(); }}>
+                                {originalData.nodeType === 'folder' ? <FaFolder /> : <FaFile className={node.isSelected ? 'text-white' : 'text-secondary'} />}
+                            </span>
+                            <span
+                                className="flex-grow-1 text-truncate"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => onSelect(originalData)}
+                            >
+                                {node.data.name}
+                            </span>
+
+                            {isFile && (
+                                <div className="d-flex align-items-center ms-2 me-2">
+                                    <button
+                                        className={`btn btn-link p-0 me-2 ${canCheckIn ? (node.isSelected ? 'text-white' : 'text-primary') : 'text-muted'}`}
+                                        disabled={!canCheckIn}
+                                        title="check in"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onCheckIn?.(originalData.path);
+                                        }}
+                                        style={{ opacity: canCheckIn ? 1 : 0.4, border: 'none', background: 'none' }}
+                                    >
+                                        <FaUpload size={14} />
+                                    </button>
+                                    <button
+                                        className={`btn btn-link p-0 ${canCheckInAsNew ? (node.isSelected ? 'text-white' : 'text-success') : 'text-muted'}`}
+                                        disabled={!canCheckInAsNew}
+                                        title="check in as new"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onCheckInAsNew?.(originalData.path);
+                                        }}
+                                        style={{ opacity: canCheckInAsNew ? 1 : 0.4, border: 'none', background: 'none' }}
+                                    >
+                                        <FaPlus size={14} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    );
+                }}
             </Tree>
         </div>
     );
