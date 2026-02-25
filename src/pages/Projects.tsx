@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '../stores'
 import NavBar from '../components/NavBar'
@@ -9,7 +10,7 @@ import type { Workspace } from '../types'
 
 function Projects() {
     const navigate = useNavigate()
-  
+
     const { user } = useAuthStore()
     const [workspaces, setWorkspaces] = useState<Workspace[]>([])
     const [loading, setLoading] = useState(true)
@@ -43,15 +44,15 @@ function Projects() {
     const handleCreateWorkspace = async (formData: ProjectFormData) => {
         console.log('Creating project:', formData)
         if (!formData.localPath.trim() || !formData.workspaceName.trim() || !formData.description.trim()) {
-            alert('Please fill in all fields')
+            toast.error('Please fill in all fields')
             return
         }
         if (formData.localPath.includes(' ')) {
-            alert('Local path cannot contain spaces')
+            toast.error('Local path cannot contain spaces')
             return
         }
         if (formData.workspaceName.includes(' ')) {
-            alert('Workspace name cannot contain spaces')
+            toast.error('Workspace name cannot contain spaces')
             return
         }
 
@@ -59,14 +60,14 @@ function Projects() {
         const pathParts = formData.localPath.split(/[/\\]/)
         const lastPart = pathParts[pathParts.length - 1]
         if (lastPart !== formData.workspaceName) {
-            alert(`The last folder of the local path ("${lastPart}") must match the workspace name ("${formData.workspaceName}")`)
+            toast.error(`The last folder of the local path ("${lastPart}") must match the workspace name ("${formData.workspaceName}")`)
             return
         }
 
         try {
             const response = await apiLocalService.post('/api/create-project', formData)
             if (response.status === 200) {
-                alert('Workspace initialized. Sync process started in background.')
+                toast.success('Workspace initialized. Sync process started in background.')
                 setIsModalOpen(false)
 
                 // Refresh workspaces list
@@ -93,9 +94,9 @@ function Projects() {
                 errorMessage = err.message
             }
 
-            alert(errorMessage)
+            toast.error(errorMessage)
         }
-      //  window.location.reload()
+        //  window.location.reload()
     }
 
     return (

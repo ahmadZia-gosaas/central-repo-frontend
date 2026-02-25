@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
 import { useAuthStore } from '../stores'
 import { apiLocalService } from '../services/APIRequest'
 
@@ -23,7 +24,7 @@ function NavBar({ title = 'Dashboard' }: NavBarProps) {
             }
         } catch (error) {
             console.error('Error fetching MAC address:', error)
-            alert('Failed to fetch MAC address')
+            toast.error('Failed to fetch MAC address')
         }
     }
 

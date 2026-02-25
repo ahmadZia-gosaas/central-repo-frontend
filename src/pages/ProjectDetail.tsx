@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import NavBar from '../components/NavBar'
 import Modal from '../components/Modal'
 import CloneProjectForm, { type CloneProjectData } from '../components/CloneProjectForm'
@@ -11,6 +11,8 @@ import FileHistoryTable from '../components/FileHistoryTable'
 import ProjectInfo from '../components/ProjectInfo'
 import FileProperties from '../components/FileProperties'
 import { mergeTrees } from '../utils/treeUtils'
+import { toast } from 'react-hot-toast'
+import { SlEyeglass } from 'react-icons/sl'
 
 function ProjectDetail() {
     const { id, name } = useParams<{ id: string; name: string }>()
@@ -30,33 +32,34 @@ function ProjectDetail() {
     const [loadingHistory, setLoadingHistory] = useState(false)
     const [historyNodeName, setHistoryNodeName] = useState('')
 
-    useEffect(() => {
-        const fetchUserState = async () => {
-            if (!user?.sub || !mac || !id) return
+    const fetchUserState = useCallback(async () => {
+        if (!user?.sub || !mac || !id) return
 
-            try {
-                setLoading(true)
-                const userId = parseInt(user.sub as string, 10)
-                const response = await apiRemoteService.get(`/workspaces/${id}/user-state`, {
-                    params: {
-                        userId,
-                        deviceMac: mac
-                    }
-                })
-                setUserState(response.data)
-                setError(null)
-            } catch (err: any) {
-                console.error('Error fetching user state:', err)
-                if (err.response?.status === 404) {
-                    setError(404)
-                } else {
-                    setError(err.response?.status || 500)
+        try {
+            setLoading(true)
+            const userId = parseInt(user.sub as string, 10)
+            const response = await apiRemoteService.get(`/workspaces/${id}/user-state`, {
+                params: {
+                    userId,
+                    deviceMac: mac
                 }
-            } finally {
-                setLoading(false)
+            })
+            setUserState(response.data)
+            setError(null)
+        } catch (err: any) {
+            console.error('Error fetching user state:', err)
+            console.log(err)
+            if (err.response?.status === 404) {
+                setError(404)
+            } else {
+                setError(err.response?.status || 500)
             }
+        } finally {
+            setLoading(false)
         }
+    }, [user?.sub, mac, id])
 
+    useEffect(() => {
         fetchUserState()
 
         if (id && user?.sub && mac) {
@@ -64,8 +67,9 @@ function ProjectDetail() {
             fetchRootPath(id, userId, mac);
 
         }
-    }, [id, user?.sub, mac, fetchRootPath])
+    }, [id, user?.sub, mac, fetchRootPath, fetchUserState])
 
+    console.log(rootPath)
 
 
     const onCloneSubmit = async (data: CloneProjectData) => {
@@ -81,19 +85,11 @@ function ProjectDetail() {
                 ? response.data
                 : (response.data.message || 'Clone process started in background.')
 
-            alert(message)
+            toast.success(message)
             setIsCloneModalOpen(false)
 
             // Re-fetch user state after starting clone
-            const userId = parseInt(user?.sub as string, 10)
-            const updatedResponse = await apiRemoteService.get(`/workspaces/${id}/user-state`, {
-                params: {
-                    userId,
-                    deviceMac: mac
-                }
-            })
-            setUserState(updatedResponse.data)
-            setError(null)
+            await fetchUserState()
 
         } catch (err: any) {
             console.error('Error cloning project:', err)
@@ -108,7 +104,7 @@ function ProjectDetail() {
                 errorMessage = err.message
             }
 
-            alert(errorMessage)
+            toast.error(errorMessage)
         }
     }
 
@@ -125,10 +121,10 @@ function ProjectDetail() {
 
             const updatedState = mergeTrees(userState, localTree);
             setUserState(updatedState);
-            alert('Local state updated successfully.');
+            toast.success('Local state updated successfully.');
         } catch (err: any) {
             console.error('Error refreshing local state:', err);
-            alert('Failed to refresh local state. Make sure the local service is running.');
+            toast.error('Failed to refresh local state. Make sure the local service is running.');
         } finally {
             setLoading(false);
         }
@@ -136,7 +132,7 @@ function ProjectDetail() {
 
     const handleCheckout = async () => {
         if (!selectedNode || !id || !rootPath) {
-            alert('Missing required information for checkout');
+            toast.error('Missing required information for checkout');
             return;
         }
 
@@ -157,7 +153,8 @@ function ProjectDetail() {
                 ? response.data
                 : (response.data.message || 'Checkout process started successfully.');
 
-            alert(message);
+            toast.success(message);
+            await fetchUserState();
         } catch (err: any) {
             console.error('Error during checkout:', err);
             const errorData = err.response?.data;
@@ -171,19 +168,19 @@ function ProjectDetail() {
                 errorMessage = err.message;
             }
 
-            alert(errorMessage);
+            toast.error(errorMessage);
         }
-        window.location.reload()
     };
+
 
     const handleCheckIn = async (node: FileNode) => {
         if (!id || !rootPath || !name) {
-            alert('Missing required information for check-in');
+            toast.error('Missing required information for check-in');
             return;
         }
 
         if (node.isLocked == true && node.lockedBy != user?.username) {
-            alert("File is locked by another user cannot perform this action")
+            toast.error("File is locked by another user cannot perform this action")
             return;
         }
 
@@ -211,7 +208,8 @@ function ProjectDetail() {
             }
 
             if (response.status === 200 || response.status === 202) {
-                alert(response.data || "Check-in process started successfully.");
+                toast.success(response.data || "Check-in process started successfully.");
+                await fetchUserState();
             }
         } catch (err: any) {
             console.error('Error during check-in:', err);
@@ -226,14 +224,13 @@ function ProjectDetail() {
                 errorMessage = err.message;
             }
 
-            alert(errorMessage);
+            toast.error(errorMessage);
         }
-        window.location.reload()
     };
 
     const handleCheckInAsNew = async (node: FileNode) => {
         if (!id || !rootPath || !name) {
-            alert('Missing required information for check-in');
+            toast.error('Missing required information for check-in');
             return;
         }
 
@@ -250,7 +247,8 @@ function ProjectDetail() {
             console.log(response)
 
             if (response.status === 200 || response.status === 202) {
-                alert(response.data || "Check-in process for new item started successfully.");
+                toast.success(response.data || "Check-in process for new item started successfully.");
+                await fetchUserState();
             }
         } catch (err: any) {
             console.error('Error during check-in as new:', err);
@@ -265,14 +263,13 @@ function ProjectDetail() {
                 errorMessage = err.message;
             }
 
-            alert(errorMessage);
+            toast.error(errorMessage);
         }
-        window.location.reload()
     };
 
     const handleSync = async (node: FileNode) => {
         if (!id || !rootPath) {
-            alert('Missing required information for sync');
+            toast.error('Missing required information for sync');
             return;
         }
 
@@ -288,7 +285,7 @@ function ProjectDetail() {
             })
 
             if (response.status === 200 || response.status === 202) {
-                alert(response.data || "Sync process started successfully.");
+                toast.success(response.data || "Sync process started successfully.");
             }
         } catch (err: any) {
             console.error('Error during sync:', err);
@@ -303,7 +300,7 @@ function ProjectDetail() {
                 errorMessage = err.message;
             }
 
-            alert(errorMessage);
+            toast.error(errorMessage);
         }
     };
 
@@ -324,7 +321,7 @@ function ProjectDetail() {
             setHistoryData(Array.isArray(response.data) ? response.data : []);
         } catch (err: any) {
             console.error('Error fetching file history:', err);
-            alert('Failed to fetch file history.');
+            toast.error('Failed to fetch file history.');
         } finally {
             setLoadingHistory(false);
         }
@@ -370,7 +367,7 @@ function ProjectDetail() {
                                                     <span className="visually-hidden">Loading...</span>
                                                 </div>
                                             </div>
-                                        ) : error === 404 ? (
+                                        ) : !rootPath ? (
                                             <div className="text-center py-4 bg-light rounded">
                                                 <p className="text-muted mb-3">No local state found for this device.</p>
                                                 <button
