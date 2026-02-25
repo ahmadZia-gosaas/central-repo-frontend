@@ -21,7 +21,7 @@ function QuickOverview() {
                                         <p className="text-muted">Here's a quick summary of your account.</p>
                                     </div>
 
-                                    <div className="row mt-4">
+                                    {/* <div className="row mt-4">
                                         <div className="col-md-4 mb-3">
                                             <div className="card border-light">
                                                 <div className="card-body text-center">
@@ -46,7 +46,7 @@ function QuickOverview() {
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </div> */}
 
                                     {user && (
                                         <div className="card bg-light border-0 mt-4">
@@ -62,6 +62,10 @@ function QuickOverview() {
                                                             <tr>
                                                                 <td className="fw-bold text-muted">Email:</td>
                                                                 <td>{user?.email || 'N/A'}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="fw-bold text-muted">Username:</td>
+                                                                <td>{user?.username || 'N/A'}</td>
                                                             </tr>
                                                             <tr>
                                                                 <td className="fw-bold text-muted">Role:</td>

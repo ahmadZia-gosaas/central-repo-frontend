@@ -10,6 +10,7 @@ export interface User extends Record<string, unknown> {
   id?: string;
   iat?: number; // Issued at
   exp?: number; // Expiration time
+  username?: string;
   [key: string]: unknown; // Allow any additional claims from the token
 }
 
