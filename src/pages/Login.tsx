@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores'
 import { apiRemoteService } from '../services/APIRequest'
@@ -22,8 +22,17 @@ function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
-  const { login } = useAuthStore()
 
+  const { login, user } = useAuthStore()
+
+
+  useEffect(() => {
+
+    if (user) {
+      navigate('/welcome')
+    }
+
+  }, [user])
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
