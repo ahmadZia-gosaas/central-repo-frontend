@@ -14,6 +14,12 @@ function QuickOverview() {
                 <div className="container">
                     <div className="row justify-content-center">
                         <div className="col-md-10">
+                            <button
+                                className="btn btn-secondary mb-3"
+                                onClick={() => navigate('/welcome')}
+                            >
+                                ← Back to Welcome
+                            </button>
                             <div className="card shadow-sm border-0">
                                 <div className="card-body p-5">
                                     <div className="text-center mb-4">

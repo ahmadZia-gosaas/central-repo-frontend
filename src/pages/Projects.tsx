@@ -107,6 +107,12 @@ function Projects() {
                 <div className="container">
                     <div className="row justify-content-center">
                         <div className="col-md-10">
+                            <button
+                                className="btn btn-secondary mb-3"
+                                onClick={() => navigate('/welcome')}
+                            >
+                                ← Back to Welcome
+                            </button>   
                             <div className="d-flex justify-content-between align-items-center mb-3">
                                 <h2 className="text-dark fw-bold mb-0">Your Workspaces</h2>
                                 <button
