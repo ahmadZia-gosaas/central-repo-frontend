@@ -3,6 +3,7 @@ import { useState } from 'react'
 interface CreateProjectFormProps {
     onSubmit: (data: ProjectFormData) => void
     onCancel: () => void
+    confirmationOnCancel?: boolean
 }
 
 export interface ProjectFormData {
@@ -11,7 +12,7 @@ export interface ProjectFormData {
     description: string
 }
 
-function CreateProjectForm({ onSubmit, onCancel }: CreateProjectFormProps) {
+function CreateProjectForm({ onSubmit, onCancel, confirmationOnCancel = false }: CreateProjectFormProps) {
     const [formData, setFormData] = useState<ProjectFormData>({
         localPath: '',
         workspaceName: '',
@@ -29,7 +30,7 @@ function CreateProjectForm({ onSubmit, onCancel }: CreateProjectFormProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        
+
         if (!formData.localPath.trim()) {
             setError('Please select a local path')
             return
@@ -45,15 +46,24 @@ function CreateProjectForm({ onSubmit, onCancel }: CreateProjectFormProps) {
 
         onSubmit(formData)
     }
+    const handleCancel = () => {
+        if (confirmationOnCancel) {
+            if (window.confirm('Are you sure you want to cancel?')) {
+                onCancel()
+            }
+        } else {
+            onCancel()
+        }
+    }
 
     return (
         <form onSubmit={handleSubmit}>
             {error && (
                 <div className="alert alert-danger alert-dismissible fade show" role="alert">
                     {error}
-                    <button 
-                        type="button" 
-                        className="btn-close" 
+                    <button
+                        type="button"
+                        className="btn-close"
                         onClick={() => setError(null)}
                     ></button>
                 </div>
@@ -102,7 +112,7 @@ function CreateProjectForm({ onSubmit, onCancel }: CreateProjectFormProps) {
                 <button
                     type="button"
                     className="btn btn-secondary"
-                    onClick={onCancel}
+                    onClick={handleCancel}
                 >
                     Cancel
                 </button>

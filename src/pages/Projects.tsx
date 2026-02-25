@@ -204,6 +204,7 @@ function Projects() {
             </div>
 
             <Modal
+                confirmationOnCancel={true}
                 isOpen={isModalOpen}
                 title="Create New Workspace"
                 onClose={() => setIsModalOpen(false)}
@@ -212,6 +213,7 @@ function Projects() {
                 <CreateProjectForm
                     onSubmit={handleCreateWorkspace}
                     onCancel={() => setIsModalOpen(false)}
+                    confirmationOnCancel={true}
                 />
             </Modal>
         </div>

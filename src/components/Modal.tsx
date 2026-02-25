@@ -7,10 +7,29 @@ interface ModalProps {
     children: React.ReactNode
     footer?: React.ReactNode
     size?: 'sm' | 'lg' | 'xl'
+    confirmationOnCancel?: boolean
 }
 
-function Modal({ isOpen, title, onClose, children, footer, size = 'lg' }: ModalProps) {
+function Modal({
+    isOpen,
+    title,
+    onClose,
+    children,
+    footer,
+    size = 'lg',
+    confirmationOnCancel = false
+}: ModalProps) {
     if (!isOpen) return null
+
+    const handleClose = () => {
+        if (confirmationOnCancel) {
+            if (window.confirm('Are you sure you want to cancel?')) {
+                onClose()
+            }
+        } else {
+            onClose()
+        }
+    }
 
     const sizeClass = {
         sm: 'modal-sm',
@@ -19,7 +38,7 @@ function Modal({ isOpen, title, onClose, children, footer, size = 'lg' }: ModalP
     }[size]
 
     return (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }} onClick={onClose}>
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }} onClick={handleClose}>
             <div className={`modal-dialog modal-dialog-centered ${sizeClass}`} style={{ maxWidth: size === 'sm' ? '500px' : size === 'lg' ? '800px' : '1000px' }} onClick={(e) => e.stopPropagation()}>
                 <div className="modal-content">
                     <div className="modal-header border-bottom">
@@ -27,7 +46,7 @@ function Modal({ isOpen, title, onClose, children, footer, size = 'lg' }: ModalP
                         <button
                             type="button"
                             className="btn-close"
-                            onClick={onClose}
+                            onClick={handleClose}
                             aria-label="Close"
                         ></button>
                     </div>
