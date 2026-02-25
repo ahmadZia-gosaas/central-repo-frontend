@@ -9,6 +9,7 @@ import type { Workspace } from '../types'
 
 function Projects() {
     const navigate = useNavigate()
+  
     const { user } = useAuthStore()
     const [workspaces, setWorkspaces] = useState<Workspace[]>([])
     const [loading, setLoading] = useState(true)
@@ -94,6 +95,7 @@ function Projects() {
 
             alert(errorMessage)
         }
+      //  window.location.reload()
     }
 
     return (

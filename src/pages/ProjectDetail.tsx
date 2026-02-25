@@ -173,7 +173,7 @@ function ProjectDetail() {
 
             alert(errorMessage);
         }
-        
+        window.location.reload()
     };
 
     const handleCheckIn = async (node: FileNode) => {
@@ -228,6 +228,7 @@ function ProjectDetail() {
 
             alert(errorMessage);
         }
+        window.location.reload()
     };
 
     const handleCheckInAsNew = async (node: FileNode) => {
@@ -266,6 +267,7 @@ function ProjectDetail() {
 
             alert(errorMessage);
         }
+        window.location.reload()
     };
 
     const handleSync = async (node: FileNode) => {
