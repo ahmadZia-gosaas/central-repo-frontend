@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { confirm } from './Confirm'
 
 interface CreateProjectFormProps {
     onSubmit: (data: ProjectFormData) => void
@@ -46,9 +47,9 @@ function CreateProjectForm({ onSubmit, onCancel, confirmationOnCancel = false }:
 
         onSubmit(formData)
     }
-    const handleCancel = () => {
+    const handleCancel = async () => {
         if (confirmationOnCancel) {
-            if (window.confirm('Are you sure you want to cancel?')) {
+            if (await confirm({ message: 'Are you sure you want to cancel?' })) {
                 onCancel()
             }
         } else {

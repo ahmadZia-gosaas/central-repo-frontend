@@ -69,7 +69,6 @@ function ProjectDetail() {
         }
     }, [id, user?.sub, mac, fetchRootPath, fetchUserState])
 
-    console.log(rootPath)
 
 
     const onCloneSubmit = async (data: CloneProjectData) => {

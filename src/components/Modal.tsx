@@ -1,4 +1,5 @@
 import React from 'react'
+import { confirm } from './Confirm'
 
 interface ModalProps {
     isOpen: boolean
@@ -21,9 +22,9 @@ function Modal({
 }: ModalProps) {
     if (!isOpen) return null
 
-    const handleClose = () => {
+    const handleClose = async () => {
         if (confirmationOnCancel) {
-            if (window.confirm('Are you sure you want to cancel?')) {
+            if (await confirm({ message: 'Are you sure you want to cancel?' })) {
                 onClose()
             }
         } else {
