@@ -48,7 +48,7 @@ function Login() {
       // Extract error message from API response
       const errorData: ErrorResponse | null = err.response?.data
       const errorMessage = errorData?.message || err.message || 'Login failed. Please try again.'
-      
+
       setError(errorMessage)
       console.error('Login error:', err)
     } finally {
@@ -68,9 +68,9 @@ function Login() {
           {error && (
             <div className="alert alert-danger alert-dismissible fade show" role="alert">
               <strong>Error:</strong> {error}
-              <button 
-                type="button" 
-                className="btn-close" 
+              <button
+                type="button"
+                className="btn-close"
                 onClick={() => setError(null)}
                 aria-label="Close"
               ></button>
@@ -104,7 +104,7 @@ function Login() {
                 disabled={loading}
               />
             </div>
-            <div className="mb-3 form-check">
+            {/* <div className="mb-3 form-check">
               <input 
                 type="checkbox" 
                 className="form-check-input" 
@@ -114,9 +114,9 @@ function Login() {
               <label className="form-check-label" htmlFor="rememberMe">
                 Remember me
               </label>
-            </div>
-            <button 
-              type="submit" 
+            </div> */}
+            <button
+              type="submit"
               className="btn btn-primary w-100 mb-3 fw-semibold"
               disabled={loading}
             >
