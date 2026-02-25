@@ -12,7 +12,6 @@ import ProjectInfo from '../components/ProjectInfo'
 import FileProperties from '../components/FileProperties'
 import { mergeTrees } from '../utils/treeUtils'
 import { toast } from 'react-hot-toast'
-import { SlEyeglass } from 'react-icons/sl'
 
 function ProjectDetail() {
     const { id, name } = useParams<{ id: string; name: string }>()
