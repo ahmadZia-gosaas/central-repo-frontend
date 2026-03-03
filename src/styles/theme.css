@@ -1,0 +1,202 @@
+/* =========================================================
+   App Theme Variables — Light & Dark
+   Apply theme by setting data-theme="light" or "dark" on
+   the <html> element. Falls back to light if unset.
+   ========================================================= */
+
+/* ------ Light theme (default) ------ */
+:root,
+[data-theme="light"] {
+  /* Surfaces */
+  --color-bg-primary: #f5f5f5;
+  --color-bg-secondary: #ffffff;
+  --color-bg-tertiary: #f8f9fa;
+
+  /* Text */
+  --color-text-primary: #212529;
+  --color-text-secondary: #6c757d;
+  --color-text-inverse: #ffffff;
+
+  /* Borders */
+  --color-border: #dee2e6;
+  --color-border-light: #e9ecef;
+
+  /* Navigation */
+  --color-nav-bg: #212529;
+  --color-nav-text: #f8f9fa;
+  --color-nav-brand: #ffffff;
+
+  /* Accent / Brand */
+  --color-accent-primary: #0d6efd;
+  --color-accent-primary-hover: #0b5ed7;
+  --color-accent-secondary: #6c757d;
+  --color-accent-info: #0dcaf0;
+
+  /* Interactive */
+  --color-link: #0d6efd;
+  --color-link-hover: #0a58ca;
+
+  /* Feedback */
+  --color-success-bg: #d1e7dd;
+  --color-success-text: #0f5132;
+  --color-danger-bg: #f8d7da;
+  --color-danger-text: #842029;
+  --color-info-bg: #cff4fc;
+  --color-info-text: #055160;
+  --color-warning-bg: #fff3cd;
+  --color-warning-text: #664d03;
+
+  /* Shadows */
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-shadow-sm: rgba(0, 0, 0, 0.075);
+
+  /* ---- Bootstrap 5 overrides ---- */
+  --bs-body-bg: var(--color-bg-primary);
+  --bs-body-color: var(--color-text-primary);
+  --bs-secondary-bg: var(--color-bg-tertiary);
+  --bs-card-bg: var(--color-bg-secondary);
+  --bs-border-color: var(--color-border);
+  --bs-border-color-translucent: rgba(0, 0, 0, 0.175);
+  --bs-link-color: var(--color-link);
+  --bs-link-hover-color: var(--color-link-hover);
+}
+
+/* ------ Dark theme ------ */
+[data-theme="dark"] {
+  /* Surfaces */
+  --color-bg-primary: #121212;
+  --color-bg-secondary: #1e1e1e;
+  --color-bg-tertiary: #2a2a2a;
+
+  /* Text */
+  --color-text-primary: #e9ecef;
+  --color-text-secondary: #adb5bd;
+  --color-text-inverse: #212529;
+
+  /* Borders */
+  --color-border: #373737;
+  --color-border-light: #2d2d2d;
+
+  /* Navigation */
+  --color-nav-bg: #0d0d0d;
+  --color-nav-text: #dee2e6;
+  --color-nav-brand: #ffffff;
+
+  /* Accent / Brand */
+  --color-accent-primary: #4d9fff;
+  --color-accent-primary-hover: #6ab0ff;
+  --color-accent-secondary: #9ba5b0;
+  --color-accent-info: #3dd5f3;
+
+  /* Interactive */
+  --color-link: #4d9fff;
+  --color-link-hover: #6ab0ff;
+
+  /* Feedback */
+  --color-success-bg: #0f3d27;
+  --color-success-text: #75c79e;
+  --color-danger-bg: #3d0f14;
+  --color-danger-text: #f1a3a8;
+  --color-info-bg: #0b3640;
+  --color-info-text: #7dd3e8;
+  --color-warning-bg: #3d2e00;
+  --color-warning-text: #f5c842;
+
+  /* Shadows */
+  --color-shadow: rgba(0, 0, 0, 0.4);
+  --color-shadow-sm: rgba(0, 0, 0, 0.3);
+
+  /* ---- Bootstrap 5 overrides ---- */
+  --bs-body-bg: var(--color-bg-primary);
+  --bs-body-color: var(--color-text-primary);
+  --bs-secondary-bg: var(--color-bg-tertiary);
+  --bs-card-bg: var(--color-bg-secondary);
+  --bs-border-color: var(--color-border);
+  --bs-border-color-translucent: rgba(255, 255, 255, 0.15);
+  --bs-link-color: var(--color-link);
+  --bs-link-hover-color: var(--color-link-hover);
+
+  /* Bootstrap component token overrides */
+  --bs-nav-link-color: var(--color-nav-text);
+  --bs-navbar-color: var(--color-nav-text);
+  --bs-table-bg: var(--color-bg-secondary);
+  --bs-table-striped-bg: var(--color-bg-tertiary);
+  --bs-input-bg: var(--color-bg-tertiary);
+  --bs-input-color: var(--color-text-primary);
+  --bs-input-border-color: var(--color-border);
+  --bs-modal-bg: var(--color-bg-secondary);
+  --bs-dropdown-bg: var(--color-bg-secondary);
+  --bs-dropdown-link-color: var(--color-text-primary);
+  --bs-dropdown-link-hover-bg: var(--color-bg-tertiary);
+}
+
+/* =========================================================
+   System preference fallback — auto mode
+   If no data-theme is set, respect the OS preference.
+   (Overridden by explicit data-theme attribute.)
+   ========================================================= */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    /* Surfaces */
+    --color-bg-primary: #121212;
+    --color-bg-secondary: #1e1e1e;
+    --color-bg-tertiary: #2a2a2a;
+
+    /* Text */
+    --color-text-primary: #e9ecef;
+    --color-text-secondary: #adb5bd;
+    --color-text-inverse: #212529;
+
+    /* Borders */
+    --color-border: #373737;
+    --color-border-light: #2d2d2d;
+
+    /* Navigation */
+    --color-nav-bg: #0d0d0d;
+    --color-nav-text: #dee2e6;
+    --color-nav-brand: #ffffff;
+
+    /* Accent / Brand */
+    --color-accent-primary: #4d9fff;
+    --color-accent-primary-hover: #6ab0ff;
+    --color-accent-secondary: #9ba5b0;
+    --color-accent-info: #3dd5f3;
+
+    /* Interactive */
+    --color-link: #4d9fff;
+    --color-link-hover: #6ab0ff;
+
+    /* Feedback */
+    --color-success-bg: #0f3d27;
+    --color-success-text: #75c79e;
+    --color-danger-bg: #3d0f14;
+    --color-danger-text: #f1a3a8;
+    --color-info-bg: #0b3640;
+    --color-info-text: #7dd3e8;
+    --color-warning-bg: #3d2e00;
+    --color-warning-text: #f5c842;
+
+    /* Shadows */
+    --color-shadow: rgba(0, 0, 0, 0.4);
+    --color-shadow-sm: rgba(0, 0, 0, 0.3);
+
+    /* Bootstrap 5 overrides */
+    --bs-body-bg: var(--color-bg-primary);
+    --bs-body-color: var(--color-text-primary);
+    --bs-secondary-bg: var(--color-bg-tertiary);
+    --bs-card-bg: var(--color-bg-secondary);
+    --bs-border-color: var(--color-border);
+    --bs-border-color-translucent: rgba(255, 255, 255, 0.15);
+    --bs-link-color: var(--color-link);
+    --bs-link-hover-color: var(--color-link-hover);
+    --bs-table-bg: var(--color-bg-secondary);
+    --bs-table-striped-bg: var(--color-bg-tertiary);
+    --bs-input-bg: var(--color-bg-tertiary);
+    --bs-input-color: var(--color-text-primary);
+    --bs-input-border-color: var(--color-border);
+    --bs-modal-bg: var(--color-bg-secondary);
+    --bs-dropdown-bg: var(--color-bg-secondary);
+    --bs-dropdown-link-color: var(--color-text-primary);
+    --bs-dropdown-link-hover-bg: var(--color-bg-tertiary);
+  }
+}
