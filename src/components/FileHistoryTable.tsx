@@ -7,6 +7,7 @@ interface HistoryItem {
     username: string;
     createdAt: string;
     versionNumber: number;
+    node_id: number;
 }
 
 interface FileHistoryTableProps {
@@ -16,6 +17,8 @@ interface FileHistoryTableProps {
 }
 
 const FileHistoryTable: React.FC<FileHistoryTableProps> = ({ data, loading, filename }) => {
+
+    console.log("File history data:", data);
     if (loading) {
         return (
             <div className="text-center py-5">
