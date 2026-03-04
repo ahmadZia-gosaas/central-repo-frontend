@@ -109,6 +109,7 @@ function CreateProjectForm({ onSubmit, onCancel, confirmationOnCancel = false }:
             <div className="mb-3">
                 <label className="form-label fw-bold">Description</label>
                 <textarea
+                maxLength={50}
                     className="form-control"
                     name="description"
                     placeholder="Enter project description"
