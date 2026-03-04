@@ -32,7 +32,7 @@ const treeData = useMemo(() => {
         <div className="file-tree-container" style={{ height: '400px', width: '100%', border: '1px solid #dee2e6', borderRadius: '4px', overflow: 'hidden' }}>
             <Tree
                 initialData={treeData}
-                openByDefault={false}
+                openByDefault={true}
                 width={"100%"}
                 height={400}
                 indent={20}

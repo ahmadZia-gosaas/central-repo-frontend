@@ -102,7 +102,7 @@ const FileProperties: React.FC<FilePropertiesProps> = ({ selectedNode, rootPath,
                 <button
                     className="btn btn-primary w-100 d-flex align-items-center justify-content-center"
                     onClick={onCheckout}
-                    disabled={!rootPath}
+                    disabled={!rootPath ||  selectedNode.isLocked ? true : false}
                 >
                     <FaClock className="me-2" /> Check Out
                 </button>

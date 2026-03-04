@@ -25,6 +25,9 @@ function ProjectDetail() {
     const [isCloneModalOpen, setIsCloneModalOpen] = useState(false)
     const [selectedNode, setSelectedNode] = useState<FileNode | null>(null)
 
+    // global API action loading (shows overlay spinner for any API call)
+    const [apiLoading, setApiLoading] = useState(false)
+
     // History states
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
     const [historyData, setHistoryData] = useState<any[]>([])
@@ -36,6 +39,7 @@ function ProjectDetail() {
 
         try {
             setLoading(true)
+            setApiLoading(true)
             const userId = parseInt(user.sub as string, 10)
             const response = await apiRemoteService.get(`/workspaces/${id}/user-state`, {
                 params: {
@@ -55,6 +59,7 @@ function ProjectDetail() {
             }
         } finally {
             setLoading(false)
+            setApiLoading(false)
         }
     }, [user?.sub, mac, id])
 
@@ -74,6 +79,7 @@ function ProjectDetail() {
         if (!id) return
 
         try {
+            setApiLoading(true)
             const response = await apiLocalService.post('/api/clone-project', {
                 projectId: parseInt(id, 10),
                 rootPath: data.rootPath
@@ -103,6 +109,8 @@ function ProjectDetail() {
             }
 
             toast.error(errorMessage)
+        } finally {
+            setApiLoading(false)
         }
     }
 
@@ -111,6 +119,7 @@ function ProjectDetail() {
 
         try {
             setLoading(true);
+            setApiLoading(true);
             const response = await apiLocalService.get('/client/tree', {
                 params: { path: rootPath }
             });
@@ -125,6 +134,7 @@ function ProjectDetail() {
             toast.error('Failed to refresh local state. Make sure the local service is running.');
         } finally {
             setLoading(false);
+            setApiLoading(false);
         }
     };
 
@@ -140,6 +150,7 @@ function ProjectDetail() {
         const localPath = `${rootPath}/${relativePath}`;
 
         try {
+            setApiLoading(true);
             const response = await apiLocalService.post('/api/checkout', null, {
                 params: {
                     workspaceId: id,
@@ -167,6 +178,8 @@ function ProjectDetail() {
             }
 
             toast.error(errorMessage);
+        } finally {
+            setApiLoading(false);
         }
     };
 
@@ -188,6 +201,7 @@ function ProjectDetail() {
         const localPath = `${rootPath}/${relativePath}`;
 
         try {
+            setApiLoading(true);
             let response;
             if (node.nodeType === 'folder') {
                 // Bulk check-in for directories
@@ -223,6 +237,8 @@ function ProjectDetail() {
             }
 
             toast.error(errorMessage);
+        } finally {
+            setApiLoading(false);
         }
     };
 
@@ -238,6 +254,7 @@ function ProjectDetail() {
         const localPath = `${rootPath}/${relativePath}`;
 
         try {
+            setApiLoading(true);
             const response = await apiLocalService.post('/api/check-in', {
                 workspaceName: name,
                 localPath: localPath
@@ -262,6 +279,8 @@ function ProjectDetail() {
             }
 
             toast.error(errorMessage);
+        } finally {
+            setApiLoading(false);
         }
     };
 
@@ -277,6 +296,7 @@ function ProjectDetail() {
         const localPath = `${rootPath}/${relativePath}`;
 
         try {
+            setApiLoading(true);
             const response = await apiLocalService.post('/api/latest-version', {
                 projectId: parseInt(id, 10),
                 localPath: localPath
@@ -299,6 +319,8 @@ function ProjectDetail() {
             }
 
             toast.error(errorMessage);
+        } finally {
+            setApiLoading(false);
         }
     };
 
@@ -309,6 +331,7 @@ function ProjectDetail() {
             setHistoryNodeName(node.name);
             setIsHistoryModalOpen(true);
             setLoadingHistory(true);
+            setApiLoading(true);
             setHistoryData([]);
 
             const response = await apiRemoteService.post('/api/file-history', {
@@ -322,6 +345,7 @@ function ProjectDetail() {
             toast.error('Failed to fetch file history.');
         } finally {
             setLoadingHistory(false);
+            setApiLoading(false);
         }
     };
 
@@ -440,6 +464,18 @@ function ProjectDetail() {
             >
                 <FileHistoryTable data={historyData} loading={loadingHistory} filename={historyNodeName} />
             </Modal>
+
+            {/* global API overlay spinner */}
+            {apiLoading && (
+                <div
+                    className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                    style={{ background: 'rgba(0,0,0,0.25)', zIndex: 1050 }}
+                >
+                    <div className="spinner-border text-light" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
