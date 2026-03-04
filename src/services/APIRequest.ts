@@ -26,7 +26,7 @@ const createAPIInstance = (type: APIType): AxiosInstance => {
 
   const instance = axios.create({
     baseURL,
-    timeout: 10000,
+    timeout: 100000000000,
   })
 
   // Add bearer token to request headers if it exists
