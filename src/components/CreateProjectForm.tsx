@@ -44,6 +44,15 @@ function CreateProjectForm({ onSubmit, onCancel, confirmationOnCancel = false }:
             setError('Please enter a description')
             return
         }
+        if(formData.workspaceName.length > 20) {
+            setError('Workspace name should not exceed 50 characters')
+            return
+        }
+        if(formData.description.length > 50) {
+            setError('Description should not exceed 50 characters')
+            return
+        }
+        
 
         onSubmit(formData)
     }

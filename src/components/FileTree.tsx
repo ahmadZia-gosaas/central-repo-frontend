@@ -14,22 +14,25 @@ interface FileTreeProps {
 
 const FileTree = ({ data, onSelect, onCheckIn, onCheckInAsNew, onSync, onHistory }: FileTreeProps) => {
     // react-arborist expects an array of roots
-    const treeData = useMemo(() => {
-        // Map the incoming structure to what react-arborist expects (id, name, children)
-        const transform = (node: any): any => ({
-            id: node.nodeId.toString(),
-            name: node.name,
-            children: node.children?.map(transform),
-            originalData: node
-        });
-        return [transform(data)];
-    }, [data]);
+const treeData = useMemo(() => {
+    const transform = (node: any): any => ({
+        // Explicitly check for -1 to trigger the fallback
+        id: node.nodeId !== -1 
+            ? node.nodeId.toString() 
+            : `${node.name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: node.name,
+        children: node.children?.map(transform),
+        originalData: node
+    });
+
+    return data ? [transform(data)] : [];
+}, [data]);
 
     return (
         <div className="file-tree-container" style={{ height: '400px', width: '100%', border: '1px solid #dee2e6', borderRadius: '4px', overflow: 'hidden' }}>
             <Tree
                 initialData={treeData}
-                openByDefault={true}
+                openByDefault={false}
                 width={"100%"}
                 height={400}
                 indent={20}
