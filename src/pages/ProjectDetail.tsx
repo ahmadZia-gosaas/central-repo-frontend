@@ -304,6 +304,7 @@ function ProjectDetail() {
 
             if (response.status === 200 || response.status === 202) {
                 toast.success(response.data || "Sync process started successfully.");
+             //   await fetchUserState();
             }
         } catch (err: any) {
             console.error('Error during sync:', err);
@@ -346,6 +347,23 @@ function ProjectDetail() {
         } finally {
             setLoadingHistory(false);
             setApiLoading(false);
+        }
+    };
+
+    const handleRestoreVersion = async (nodeId: number, versionNumber: number) => {
+        try {
+            const response = await apiLocalService.post('/api/checkout/restore-version', {
+                nodeId,
+                versionNumber
+            });
+            console.log('Version restoration triggered successfully:', response.data);
+            toast.success(`Version ${versionNumber} has been restored successfully!`);
+            setIsHistoryModalOpen(false);
+            await fetchUserState();
+
+        } catch (error) {
+            console.error("Version restoration failed:", error);
+            toast.error('Failed to restore version. Please try again later.');
         }
     };
 
@@ -462,7 +480,7 @@ function ProjectDetail() {
                 size="lg"
 
             >
-                <FileHistoryTable data={historyData} loading={loadingHistory} filename={historyNodeName} />
+                <FileHistoryTable data={historyData} loading={loadingHistory} filename={historyNodeName} onRestore={handleRestoreVersion} />
             </Modal>
 
             {/* global API overlay spinner */}

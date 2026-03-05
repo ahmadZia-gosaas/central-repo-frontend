@@ -13,10 +13,11 @@ interface HistoryItem {
 interface FileHistoryTableProps {
     data: HistoryItem[];
     loading: boolean;
-    filename?: string
+    filename?: string;
+    onRestore: (nodeId: number, versionNumber: number) => void;
 }
 
-const FileHistoryTable: React.FC<FileHistoryTableProps> = ({ data, loading, filename }) => {
+const FileHistoryTable: React.FC<FileHistoryTableProps> = ({ data, loading, filename, onRestore }) => {
 
     console.log("File history data:", data);
     if (loading) {
@@ -36,8 +37,9 @@ const FileHistoryTable: React.FC<FileHistoryTableProps> = ({ data, loading, file
             </div>
         );
     }
+
     const handleDownload = async (e: any, url: any, fileName: any) => {
-        e.preventDefault(); // Prevents the <a> tag from op:anyening the URL in a tab
+        e.preventDefault(); // Prevents the <a> tag from opening the URL in a tab
 
         try {
             const response = await fetch(url);
@@ -98,6 +100,14 @@ const FileHistoryTable: React.FC<FileHistoryTableProps> = ({ data, loading, file
                                 </small>
                             </td>
                             <td className="text-end">
+                                <button
+                                    onClick={() => onRestore(item.node_id, item.versionNumber)}
+                                    className="btn btn-outline-success btn-sm rounded-circle p-0 d-inline-flex align-items-center justify-content-center me-2"
+                                    title="Restore this version"
+                                    style={{ width: '30px', height: '30px' }}
+                                >
+                                    ↻
+                                </button>
                                 <a
                                     href={`${item.url}?versionId=${item.s3VersionId}`}
                                     onClick={(e) => handleDownload(e, `${item.url}?versionId=${item.s3VersionId}`, filename)}
